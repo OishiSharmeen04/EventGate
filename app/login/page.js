@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { authAPI } from '@/lib/api';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -16,18 +17,28 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
 
-    const result = await signIn('credentials', {
-      redirect: false,
-      email: formData.email,
-      password: formData.password,
-    });
+    try {
+      // Call backend API
+      const data = await authAPI.login({
+        email: formData.email,
+        password: formData.password,
+      });
 
-    if (result?.error) {
-      setError('Invalid credentials');
+      if (data.success) {
+        // Also sign in with NextAuth for session management
+        await signIn('credentials', {
+          redirect: false,
+          email: formData.email,
+          password: formData.password,
+        });
+
+        // Show success and redirect
+        router.push('/');
+        router.refresh();
+      }
+    } catch (err) {
+      setError(err.message || 'Login failed');
       setLoading(false);
-    } else {
-      router.push('/');
-      router.refresh();
     }
   };
 
@@ -36,7 +47,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-indigo-100 via-pink-50 to-purple-200 flex items-center justify-center p-4 pt-20">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4 pt-20">
       <div className="max-w-md w-full">
         <Link href="/" className="mb-4 text-gray-600 hover:text-gray-900 flex items-center space-x-2">
           <span>← Back to Home</span>
@@ -101,7 +112,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold disabled:opacity-50"
+              className="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Logging in...' : 'Login'}
             </button>

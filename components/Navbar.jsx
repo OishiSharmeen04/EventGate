@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { Menu, X, User, Plus, Settings, LogOut, ChevronDown } from 'lucide-react';
@@ -10,6 +10,7 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const { data: session } = useSession();
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,13 +20,36 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDropdown]);
+
+  // Close dropdown when route changes
+  const closeDropdown = () => {
+    setShowDropdown(false);
+  };
+
   return (
     <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white shadow-lg' : 'bg-white/95 backdrop-blur-sm'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
-            <Link href="/" className="text-2xl font-bold text-indigo-600">
-              🎫 TicketHub
+            <Link href="/" className="text-2xl font-bold text-indigo-600 flex items-center space-x-2">
+              <span className="text-3xl">🎫</span>
+              <span>TicketHub</span>
             </Link>
           </div>
 
@@ -47,31 +71,42 @@ export default function Navbar() {
 
           <div className="hidden md:flex items-center space-x-4">
             {session ? (
-              <div className="relative">
+              <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setShowDropdown(!showDropdown)}
                   className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
                 >
                   <User className="w-5 h-5" />
                   <span className="font-medium">{session.user.name}</span>
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 {showDropdown && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2">
                     <div className="px-4 py-3 border-b border-gray-100">
                       <p className="text-sm font-medium text-gray-900">{session.user.name}</p>
-                      <p className="text-xs text-gray-500">{session.user.email}</p>
+                      <p className="text-xs text-gray-500 truncate">{session.user.email}</p>
                     </div>
-                    <Link href="/add" className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
+                    <Link 
+                      href="/add" 
+                      onClick={closeDropdown}
+                      className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
                       <Plus className="w-4 h-4" />
                       <span>Add Event</span>
                     </Link>
-                    <Link href="/manage" className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
+                    <Link 
+                      href="/manage" 
+                      onClick={closeDropdown}
+                      className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
                       <Settings className="w-4 h-4" />
                       <span>Manage Events</span>
                     </Link>
                     <button
-                      onClick={() => signOut()}
+                      onClick={() => {
+                        closeDropdown();
+                        signOut({ callbackUrl: '/' });
+                      }}
                       className="w-full flex items-center space-x-2 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
                     >
                       <LogOut className="w-4 h-4" />
@@ -102,39 +137,77 @@ export default function Navbar() {
         {isOpen && (
           <div className="md:hidden py-4 border-t border-gray-100">
             <div className="flex flex-col space-y-3">
-              <Link href="/" className="text-gray-700 hover:text-indigo-600 font-medium">
+              <Link 
+                href="/" 
+                onClick={() => setIsOpen(false)}
+                className="text-gray-700 hover:text-indigo-600 font-medium"
+              >
                 Home
               </Link>
-              <Link href="/events" className="text-gray-700 hover:text-indigo-600 font-medium">
+              <Link 
+                href="/events" 
+                onClick={() => setIsOpen(false)}
+                className="text-gray-700 hover:text-indigo-600 font-medium"
+              >
                 Events
               </Link>
-              <Link href="/#about" className="text-gray-700 hover:text-indigo-600 font-medium">
+              <Link 
+                href="/#about" 
+                onClick={() => setIsOpen(false)}
+                className="text-gray-700 hover:text-indigo-600 font-medium"
+              >
                 About
               </Link>
-              <Link href="/#contact" className="text-gray-700 hover:text-indigo-600 font-medium">
+              <Link 
+                href="/#contact" 
+                onClick={() => setIsOpen(false)}
+                className="text-gray-700 hover:text-indigo-600 font-medium"
+              >
                 Contact
               </Link>
               {session ? (
                 <>
                   <div className="pt-3 border-t border-gray-100">
                     <p className="text-sm font-medium text-gray-900 mb-2">{session.user.name}</p>
-                    <Link href="/add" className="block text-gray-700 hover:text-indigo-600 mb-2">
+                    <Link 
+                      href="/add" 
+                      onClick={() => setIsOpen(false)}
+                      className="block text-gray-700 hover:text-indigo-600 mb-2"
+                    >
                       Add Event
                     </Link>
-                    <Link href="/manage" className="block text-gray-700 hover:text-indigo-600 mb-2">
+                    <Link 
+                      href="/manage" 
+                      onClick={() => setIsOpen(false)}
+                      className="block text-gray-700 hover:text-indigo-600 mb-2"
+                    >
                       Manage Events
                     </Link>
-                    <button onClick={() => signOut()} className="text-red-600">
+                    <button 
+                      onClick={() => {
+                        setIsOpen(false);
+                        signOut({ callbackUrl: '/' });
+                      }} 
+                      className="text-red-600"
+                    >
                       Logout
                     </button>
                   </div>
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="text-gray-700 font-medium">
+                  <Link 
+                    href="/login" 
+                    onClick={() => setIsOpen(false)}
+                    className="text-gray-700 font-medium"
+                  >
                     Login
                   </Link>
-                  <Link href="/register" className="px-6 py-2 bg-indigo-600 text-white rounded-lg text-center">
+                  <Link 
+                    href="/register" 
+                    onClick={() => setIsOpen(false)}
+                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg text-center"
+                  >
                     Register
                   </Link>
                 </>

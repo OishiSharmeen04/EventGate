@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { eventsAPI } from '@/lib/api';
 
 export default function AddEventPage() {
   const { data: session, status } = useSession();
@@ -19,10 +20,12 @@ export default function AddEventPage() {
     image: ''
   });
   const [showToast, setShowToast] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-linear-to-br from-indigo-100 via-pink-50 to-purple-200 flex items-center justify-center pt-20">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-20">
         <div className="text-center">
           <p className="text-gray-600">Loading...</p>
         </div>
@@ -35,28 +38,35 @@ export default function AddEventPage() {
     return null;
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Get existing events from memory
-    const events = JSON.parse(sessionStorage.getItem('userEvents') || '[]');
-    events.push({ ...formData, id: Date.now() });
-    sessionStorage.setItem('userEvents', JSON.stringify(events));
-    
-    setShowToast(true);
-    setTimeout(() => {
-      setShowToast(false);
-      setFormData({
-        title: '',
-        shortDesc: '',
-        fullDesc: '',
-        price: '',
-        date: '',
-        location: '',
-        category: '',
-        image: ''
-      });
-    }, 2000);
+    setLoading(true);
+    setError('');
+
+    try {
+      const data = await eventsAPI.create(formData);
+
+      if (data.success) {
+        setShowToast(true);
+        setTimeout(() => {
+          setShowToast(false);
+          setFormData({
+            title: '',
+            shortDesc: '',
+            fullDesc: '',
+            price: '',
+            date: '',
+            location: '',
+            category: '',
+            image: ''
+          });
+        }, 2000);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to create event');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -72,6 +82,13 @@ export default function AddEventPage() {
         </Link>
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-6">Add New Event</h2>
+          
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Event Title *</label>
@@ -172,9 +189,10 @@ export default function AddEventPage() {
             </div>
             <button
               type="submit"
-              className="w-full px-6 py-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold text-lg"
+              disabled={loading}
+              className="w-full px-6 py-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add Event
+              {loading ? 'Adding Event...' : 'Add Event'}
             </button>
           </form>
         </div>

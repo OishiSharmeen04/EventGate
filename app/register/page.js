@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { authAPI } from '@/lib/api';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
@@ -16,20 +17,50 @@ export default function RegisterPage() {
     setLoading(true);
     setError('');
 
-    // In production, create user in database first
-    // For now, just sign them in
-    const result = await signIn('credentials', {
-      redirect: false,
-      email: formData.email,
-      password: formData.password,
-    });
-
-    if (result?.error) {
-      setError('Registration failed');
+    // Basic validation
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters');
       setLoading(false);
-    } else {
+      return;
+    }
+
+    try {
+      // Call backend API
+      const data = await authAPI.register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (!data?.success) {
+        setError(data?.message || 'Registration failed');
+        setLoading(false);
+        return;
+      }
+
+      // Auto-login after successful registration
+      const loginRes = await signIn('credentials', {
+        redirect: false,
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (loginRes?.error) {
+        setError('Account created, but auto-login failed. Please login manually.');
+        setLoading(false);
+        return;
+      }
+
+      // Redirect user
       router.push('/');
       router.refresh();
+    } catch (err) {
+      setError(
+        err?.response?.data?.message ||
+        err?.message ||
+        'Registration failed'
+      );
+      setLoading(false);
     }
   };
 
@@ -38,7 +69,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-indigo-100 via-pink-50 to-purple-200 flex items-center justify-center p-4 pt-20">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4 pt-20">
       <div className="max-w-md w-full">
         <Link href="/" className="mb-4 text-gray-600 hover:text-gray-900 flex items-center space-x-2">
           <span>← Back to Home</span>
@@ -84,7 +115,7 @@ export default function RegisterPage() {
                 type="text"
                 required
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                 placeholder="John Doe"
               />
@@ -95,7 +126,7 @@ export default function RegisterPage() {
                 type="email"
                 required
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                 placeholder="you@example.com"
               />
@@ -105,16 +136,18 @@ export default function RegisterPage() {
               <input
                 type="password"
                 required
+                minLength={6}
                 value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                 placeholder="••••••••"
               />
+              <p className="mt-1 text-xs text-gray-500">Must be at least 6 characters</p>
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold disabled:opacity-50"
+              className="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Creating account...' : 'Sign Up'}
             </button>

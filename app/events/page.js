@@ -1,165 +1,191 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Calendar, MapPin } from 'lucide-react';
-
-const allEvents = [
-  {
-    id: 1,
-    title: "Summer Music Festival 2024",
-    shortDesc: "3-day outdoor music festival featuring top artists",
-    fullDesc: "Join us for an unforgettable 3-day music festival featuring performances from over 50 artists across multiple stages. Experience diverse genres from rock to electronic, enjoy food from local vendors, and camp under the stars with thousands of music lovers.",
-    price: "$199",
-    date: "July 15-17, 2024",
-    location: "Central Park, NYC",
-    image: "🎵",
-    category: "Music"
-  },
-  {
-    id: 2,
-    title: "Tech Conference 2024",
-    shortDesc: "Annual technology and innovation summit",
-    fullDesc: "Connect with industry leaders, attend workshops on cutting-edge technologies, and discover the latest innovations shaping our future. Network with 5000+ attendees, participate in hackathons, and gain insights from keynote speakers from Fortune 500 companies.",
-    price: "$299",
-    date: "August 5-7, 2024",
-    location: "Convention Center, SF",
-    image: "💻",
-    category: "Conference"
-  },
-  {
-    id: 3,
-    title: "Food & Wine Expo",
-    shortDesc: "Gourmet food tasting and wine pairing event",
-    fullDesc: "Indulge in exquisite culinary experiences with renowned chefs, sommelier-guided wine tastings, live cooking demonstrations, and exclusive meet-and-greets with celebrity chefs. Discover new flavors and culinary trends in this premium food celebration.",
-    price: "$89",
-    date: "September 12, 2024",
-    location: "Grand Hotel, Chicago",
-    image: "🍷",
-    category: "Food"
-  },
-  {
-    id: 4,
-    title: "Marathon Championship",
-    shortDesc: "International marathon race with prizes",
-    fullDesc: "Challenge yourself in this internationally recognized marathon featuring professional and amateur categories. Run through scenic city routes, compete for prizes totaling $100,000, and join a community of passionate runners from around the globe.",
-    price: "$45",
-    date: "October 1, 2024",
-    location: "Downtown, Boston",
-    image: "🏃",
-    category: "Sports"
-  },
-  {
-    id: 5,
-    title: "Art Gallery Exhibition",
-    shortDesc: "Contemporary art showcase by emerging artists",
-    fullDesc: "Immerse yourself in contemporary art with works from 30+ emerging artists. This curated exhibition features paintings, sculptures, digital art, and interactive installations. Meet the artists, attend guided tours, and purchase unique pieces directly from creators.",
-    price: "$25",
-    date: "November 10-20, 2024",
-    location: "Modern Art Museum, LA",
-    image: "🎨",
-    category: "Art"
-  },
-  {
-    id: 6,
-    title: "Comedy Night Special",
-    shortDesc: "Stand-up comedy show with top comedians",
-    fullDesc: "Laugh the night away with performances from award-winning comedians. This special show features 5 comedians performing their best material in an intimate venue. Includes VIP meet-and-greet options and exclusive backstage access packages.",
-    price: "$55",
-    date: "December 5, 2024",
-    location: "Comedy Club, Austin",
-    image: "😂",
-    category: "Entertainment"
-  }
-];
+import { Search, Calendar, MapPin, Filter } from 'lucide-react';
+import { eventsAPI } from '@/lib/api';
 
 export default function EventsPage() {
+  const [events, setEvents] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-
-  const filteredEvents = allEvents.filter(event => {
-    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         event.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === '' || event.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const categories = ['All', 'Music', 'Conference', 'Food', 'Sports', 'Art', 'Entertainment'];
 
+  // Fetch events from backend
+  useEffect(() => {
+    fetchEvents();
+  }, [selectedCategory, searchTerm]);
+
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      const data = await eventsAPI.getAll({
+        category: selectedCategory,
+        search: searchTerm
+      });
+
+      setEvents(data.events || []);
+    } catch (err) {
+      setError(err.message || 'Failed to load events');
+      console.error('Fetch events error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-linear-to-br from-indigo-100 via-pink-50 to-purple-200 pt-20 pb-16">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 pt-20 pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8 pt-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">All Events</h1>
-          <p className="text-xl text-gray-600">Discover and book tickets for amazing events</p>
+        {/* Header */}
+        <div className="text-center mb-12 pt-8">
+          <h1 className="text-5xl font-bold text-gray-900 mb-4 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
+            Discover Events
+          </h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Explore amazing events happening around you. Book your tickets now!
+          </p>
         </div>
 
-        <div className="mb-8 space-y-4">
-          <div className="relative max-w-2xl mx-auto">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        {/* Search & Filter Section */}
+        <div className="mb-10 space-y-6">
+          {/* Search Bar */}
+          <div className="relative max-w-3xl mx-auto">
+            <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-400 w-6 h-6" />
             <input
               type="text"
-              placeholder="Search events by name or category..."
+              placeholder="Search events by name, location, or category..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-gray-900"
+              className="w-full pl-14 pr-6 py-5 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-900 text-lg shadow-sm hover:shadow-md transition-all bg-white"
             />
           </div>
 
-          <div className="flex flex-wrap justify-center gap-2">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category === 'All' ? '' : category)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  (category === 'All' && selectedCategory === '') || selectedCategory === category
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
+          {/* Category Filter */}
+          <div className="bg-white rounded-2xl shadow-md p-6 max-w-5xl mx-auto">
+            <div className="flex items-center justify-center mb-4">
+              <Filter className="w-5 h-5 text-indigo-600 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-900">Filter by Category</h3>
+            </div>
+            <div className="flex flex-wrap justify-center gap-3">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category === 'All' ? '' : category)}
+                  className={`px-6 py-3 rounded-xl font-medium transition-all transform hover:scale-105 ${
+                    (category === 'All' && selectedCategory === '') || selectedCategory === category
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {filteredEvents.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">No events found matching your search.</p>
+        {/* Error Message */}
+        {error && (
+          <div className="max-w-2xl mx-auto mb-8 p-5 bg-red-50 border-l-4 border-red-500 rounded-lg text-red-700 shadow-sm">
+            <p className="font-medium">⚠️ {error}</p>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading ? (
+          <div className="text-center py-20">
+            <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-indigo-200 border-t-indigo-600"></div>
+            <p className="mt-6 text-gray-600 text-lg font-medium">Loading amazing events...</p>
+          </div>
+        ) : events.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="text-8xl mb-6">🔍</div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">No events found</h3>
+            <p className="text-gray-600 text-lg mb-6">Try adjusting your search or filters</p>
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedCategory('');
+              }}
+              className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold"
+            >
+              Clear Filters
+            </button>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredEvents.map((event) => (
-              <div key={event.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all transform hover:-translate-y-2">
-                <div className="h-48 bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
-                  <span className="text-7xl">{event.image}</span>
-                </div>
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full text-xs font-medium">
-                      {event.category}
-                    </span>
-                    <span className="text-xl font-bold text-indigo-600">{event.price}</span>
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
-                  <p className="text-gray-600 mb-4 line-clamp-2">{event.shortDesc}</p>
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center space-x-2 text-sm text-gray-500">
-                      <Calendar className="w-4 h-4" />
-                      <span>{event.date}</span>
+          <>
+            {/* Results Count */}
+            <div className="mb-6 text-center">
+              <p className="text-gray-600 text-lg">
+                Found <span className="font-bold text-indigo-600">{events.length}</span> amazing {events.length === 1 ? 'event' : 'events'}
+              </p>
+            </div>
+
+            {/* Events Grid */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {events.map((event) => (
+                <div key={event._id} className="group bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-3">
+                  {/* Event Image */}
+                  <div className="h-56 bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center overflow-hidden relative">
+                    {event.image && event.image.startsWith('http') ? (
+                      <img 
+                        src={event.image} 
+                        alt={event.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                    ) : (
+                      <span className="text-8xl" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji"' }}>
+                        {event.image || '🎫'}
+                      </span>
+                    )}
+                    <div className="absolute top-4 right-4 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-full">
+                      <span className="text-xl font-bold text-indigo-600">{event.price}</span>
                     </div>
-                    <div className="flex items-center space-x-2 text-sm text-gray-500">
-                      <MapPin className="w-4 h-4" />
-                      <span>{event.location}</span>
-                    </div>
                   </div>
-                  <Link href={`/events/${event.id}`} className="block w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-center">
-                    View Details
-                  </Link>
+
+                  {/* Event Details */}
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="px-4 py-1.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-semibold uppercase tracking-wide">
+                        {event.category}
+                      </span>
+                    </div>
+                    
+                    <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                      {event.title}
+                    </h3>
+                    
+                    <p className="text-gray-600 mb-4 line-clamp-2 text-sm leading-relaxed">
+                      {event.shortDesc}
+                    </p>
+                    
+                    <div className="space-y-2.5 mb-5">
+                      <div className="flex items-center space-x-3 text-sm text-gray-600">
+                        <Calendar className="w-4 h-4 text-indigo-500" />
+                        <span className="font-medium">{event.date}</span>
+                      </div>
+                      <div className="flex items-center space-x-3 text-sm text-gray-600">
+                        <MapPin className="w-4 h-4 text-indigo-500" />
+                        <span className="font-medium line-clamp-1">{event.location}</span>
+                      </div>
+                    </div>
+                    
+                    <Link 
+                      href={`/events/${event._id}`} 
+                      className="block w-full px-5 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold text-center shadow-md hover:shadow-lg transform hover:scale-105"
+                    >
+                      View Details
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

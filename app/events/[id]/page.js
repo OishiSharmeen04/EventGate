@@ -1,92 +1,73 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Calendar, MapPin, ArrowLeft } from 'lucide-react';
-
-const allEvents = [
-  {
-    id: 1,
-    title: "Summer Music Festival 2024",
-    shortDesc: "3-day outdoor music festival featuring top artists",
-    fullDesc: "Join us for an unforgettable 3-day music festival featuring performances from over 50 artists across multiple stages. Experience diverse genres from rock to electronic, enjoy food from local vendors, and camp under the stars with thousands of music lovers.",
-    price: "$199",
-    date: "July 15-17, 2024",
-    location: "Central Park, NYC",
-    image: "🎵",
-    category: "Music"
-  },
-  {
-    id: 2,
-    title: "Tech Conference 2024",
-    shortDesc: "Annual technology and innovation summit",
-    fullDesc: "Connect with industry leaders, attend workshops on cutting-edge technologies, and discover the latest innovations shaping our future. Network with 5000+ attendees, participate in hackathons, and gain insights from keynote speakers from Fortune 500 companies.",
-    price: "$299",
-    date: "August 5-7, 2024",
-    location: "Convention Center, SF",
-    image: "💻",
-    category: "Conference"
-  },
-  {
-    id: 3,
-    title: "Food & Wine Expo",
-    shortDesc: "Gourmet food tasting and wine pairing event",
-    fullDesc: "Indulge in exquisite culinary experiences with renowned chefs, sommelier-guided wine tastings, live cooking demonstrations, and exclusive meet-and-greets with celebrity chefs. Discover new flavors and culinary trends in this premium food celebration.",
-    price: "$89",
-    date: "September 12, 2024",
-    location: "Grand Hotel, Chicago",
-    image: "🍷",
-    category: "Food"
-  },
-  {
-    id: 4,
-    title: "Marathon Championship",
-    shortDesc: "International marathon race with prizes",
-    fullDesc: "Challenge yourself in this internationally recognized marathon featuring professional and amateur categories. Run through scenic city routes, compete for prizes totaling $100,000, and join a community of passionate runners from around the globe.",
-    price: "$45",
-    date: "October 1, 2024",
-    location: "Downtown, Boston",
-    image: "🏃",
-    category: "Sports"
-  },
-  {
-    id: 5,
-    title: "Art Gallery Exhibition",
-    shortDesc: "Contemporary art showcase by emerging artists",
-    fullDesc: "Immerse yourself in contemporary art with works from 30+ emerging artists. This curated exhibition features paintings, sculptures, digital art, and interactive installations. Meet the artists, attend guided tours, and purchase unique pieces directly from creators.",
-    price: "$25",
-    date: "November 10-20, 2024",
-    location: "Modern Art Museum, LA",
-    image: "🎨",
-    category: "Art"
-  },
-  {
-    id: 6,
-    title: "Comedy Night Special",
-    shortDesc: "Stand-up comedy show with top comedians",
-    fullDesc: "Laugh the night away with performances from award-winning comedians. This special show features 5 comedians performing their best material in an intimate venue. Includes VIP meet-and-greet options and exclusive backstage access packages.",
-    price: "$55",
-    date: "December 5, 2024",
-    location: "Comedy Club, Austin",
-    image: "😂",
-    category: "Entertainment"
-  }
-];
+import { Calendar, MapPin, ArrowLeft, Clock, Users, Tag, Share2, Heart } from 'lucide-react';
+import { eventsAPI } from '@/lib/api';
 
 export default function EventDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const event = allEvents.find(e => e.id === parseInt(params.id));
+  const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [isFavorite, setIsFavorite] = useState(false);
 
-  if (!event) {
+  useEffect(() => {
+    if (params.id) {
+      fetchEvent();
+    }
+  }, [params.id]);
+
+  const fetchEvent = async () => {
+    try {
+      setLoading(true);
+      const data = await eventsAPI.getById(params.id);
+      setEvent(data.event);
+    } catch (err) {
+      setError(err.message || 'Failed to load event');
+      console.error('Fetch event error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: event.title,
+        text: event.shortDesc,
+        url: window.location.href,
+      });
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      alert('Link copied to clipboard!');
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-20">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 flex items-center justify-center pt-20">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Event Not Found</h2>
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-indigo-200 border-t-indigo-600"></div>
+          <p className="mt-6 text-gray-600 text-lg font-medium">Loading event details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !event) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 flex items-center justify-center pt-20">
+        <div className="text-center bg-white rounded-2xl shadow-xl p-12 max-w-md">
+          <div className="text-7xl mb-6">😕</div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Event Not Found</h2>
+          <p className="text-gray-600 mb-8 text-lg">{error || 'This event does not exist or has been removed'}</p>
           <button
             onClick={() => router.push('/events')}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 font-semibold shadow-lg hover:shadow-xl transition-all"
           >
-            Back to Events
+            Browse All Events
           </button>
         </div>
       </div>
@@ -94,43 +75,143 @@ export default function EventDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 pb-16">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 pt-20 pb-16">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        {/* Back Button */}
         <button
           onClick={() => router.push('/events')}
-          className="mb-6 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
+          className="mb-8 px-6 py-3 bg-white border-2 border-gray-200 rounded-xl hover:bg-gray-50 hover:border-indigo-300 transition-all flex items-center space-x-2 font-medium text-gray-700 shadow-sm hover:shadow-md"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-5 h-5" />
           <span>Back to Events</span>
         </button>
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="h-64 bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
-            <span className="text-9xl">{event.image}</span>
-          </div>
-          <div className="p-8">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">{event.title}</h1>
-            <div className="flex flex-wrap gap-4 mb-6">
-              <div className="flex items-center space-x-2 text-gray-600">
-                <Calendar className="w-5 h-5" />
-                <span>{event.date}</span>
-              </div>
-              <div className="flex items-center space-x-2 text-gray-600">
-                <MapPin className="w-5 h-5" />
-                <span>{event.location}</span>
-              </div>
-              <div className="px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full text-sm font-medium">
+
+        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+          {/* Hero Image Section */}
+          <div className="relative h-96 bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500 flex items-center justify-center overflow-hidden">
+            {event.image && event.image.startsWith('http') ? (
+              <>
+                <img 
+                  src={event.image} 
+                  alt={event.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+              </>
+            ) : (
+              <span className="text-9xl z-10" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji"' }}>
+                {event.image || '🎫'}
+              </span>
+            )}
+            
+            {/* Action Buttons on Image */}
+            <div className="absolute top-6 right-6 flex space-x-3">
+              <button
+                onClick={() => setIsFavorite(!isFavorite)}
+                className="p-3 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-all shadow-lg"
+              >
+                <Heart className={`w-6 h-6 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-700'}`} />
+              </button>
+              <button
+                onClick={handleShare}
+                className="p-3 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-all shadow-lg"
+              >
+                <Share2 className="w-6 h-6 text-gray-700" />
+              </button>
+            </div>
+
+            {/* Category Badge */}
+            <div className="absolute top-6 left-6">
+              <span className="px-5 py-2 bg-white/90 backdrop-blur-sm text-indigo-700 rounded-full text-sm font-bold uppercase tracking-wide shadow-lg">
                 {event.category}
+              </span>
+            </div>
+          </div>
+
+          {/* Content Section */}
+          <div className="p-10 lg:p-12">
+            {/* Title & Quick Info */}
+            <div className="mb-8">
+              <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+                {event.title}
+              </h1>
+              
+              {/* Key Details Grid */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="flex items-start space-x-4 p-5 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100">
+                  <div className="p-3 bg-indigo-100 rounded-xl">
+                    <Calendar className="w-6 h-6 text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 font-medium mb-1">Date & Time</p>
+                    <p className="text-lg font-bold text-gray-900">{event.date}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-4 p-5 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-100">
+                  <div className="p-3 bg-purple-100 rounded-xl">
+                    <MapPin className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 font-medium mb-1">Location</p>
+                    <p className="text-lg font-bold text-gray-900">{event.location}</p>
+                  </div>
+                </div>
               </div>
             </div>
-            <p className="text-gray-700 text-lg mb-8 leading-relaxed">{event.fullDesc}</p>
-            <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Starting from</p>
-                <p className="text-3xl font-bold text-indigo-600">{event.price}</p>
+
+            {/* Description */}
+            <div className="mb-10">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
+                <span className="w-1.5 h-8 bg-gradient-to-b from-indigo-600 to-purple-600 rounded-full mr-3"></span>
+                About This Event
+              </h2>
+              <p className="text-gray-700 text-lg leading-relaxed whitespace-pre-line">
+                {event.fullDesc}
+              </p>
+            </div>
+
+            {/* Additional Info Cards */}
+            <div className="grid md:grid-cols-3 gap-6 mb-10">
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl text-center border border-blue-100">
+                <Users className="w-8 h-8 text-indigo-600 mx-auto mb-3" />
+                <p className="text-sm text-gray-600 font-medium mb-1">Hosted By</p>
+                <p className="font-bold text-gray-900">{event.userId?.name || 'Event Organizer'}</p>
               </div>
-              <button className="px-8 py-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all hover:shadow-lg font-semibold">
-                Book Now
-              </button>
+
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl text-center border border-purple-100">
+                <Tag className="w-8 h-8 text-purple-600 mx-auto mb-3" />
+                <p className="text-sm text-gray-600 font-medium mb-1">Category</p>
+                <p className="font-bold text-gray-900">{event.category}</p>
+              </div>
+
+              <div className="p-6 bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl text-center border border-green-100">
+                <Clock className="w-8 h-8 text-green-600 mx-auto mb-3" />
+                <p className="text-sm text-gray-600 font-medium mb-1">Duration</p>
+                <p className="font-bold text-gray-900">Full Day Event</p>
+              </div>
+            </div>
+
+            {/* Booking Section */}
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 shadow-xl">
+              <div className="flex flex-col md:flex-row items-center justify-between space-y-6 md:space-y-0">
+                <div className="text-white">
+                  <p className="text-sm font-medium mb-2 text-indigo-100">Ticket Price</p>
+                  <p className="text-5xl font-bold">{event.price}</p>
+                  <p className="text-sm text-indigo-100 mt-2">per person</p>
+                </div>
+                
+                <button className="px-12 py-5 bg-white text-indigo-600 rounded-xl hover:bg-gray-50 transition-all hover:shadow-2xl font-bold text-lg transform hover:scale-105">
+                  Book Your Ticket Now
+                </button>
+              </div>
+            </div>
+
+            {/* Security Note */}
+            <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <p className="text-sm text-gray-600 text-center">
+                🔒 Secure payment • 100% refund if event is cancelled • Instant e-ticket delivery
+              </p>
             </div>
           </div>
         </div>

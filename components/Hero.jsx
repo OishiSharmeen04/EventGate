@@ -1,11 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Calendar, MapPin, User, ArrowRight, Search, Clock } from 'lucide-react';
+import { eventsAPI } from '@/lib/api';
 
 export default function Hero() {
+  const router = useRouter();
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch events from API
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      const data = await eventsAPI.getAll();
+      setEvents(data.events || []);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -14,6 +37,24 @@ export default function Hero() {
       setSubmitted(false);
       setFormData({ name: '', email: '', message: '' });
     }, 3000);
+  };
+
+  // Scroll to section
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  // Navigate to events page
+  const goToEvents = () => {
+    router.push('/events');
+  };
+
+  // View event details (protected - will redirect to login if not authenticated)
+  const viewEventDetails = (eventId) => {
+    router.push(`/events/${eventId}`);
   };
 
   const features = [
@@ -39,69 +80,6 @@ export default function Hero() {
     }
   ];
 
-  const events = [
-    {
-      id: 1,
-      title: "Summer Music Festival 2024",
-      shortDesc: "3-day outdoor music festival featuring top artists",
-      price: "$199",
-      date: "July 15-17, 2024",
-      location: "Central Park, NYC",
-      image: "🎵",
-      category: "Music"
-    },
-    {
-      id: 2,
-      title: "Tech Conference 2024",
-      shortDesc: "Annual technology and innovation summit",
-      price: "$299",
-      date: "August 5-7, 2024",
-      location: "Convention Center, SF",
-      image: "💻",
-      category: "Conference"
-    },
-    {
-      id: 3,
-      title: "Food & Wine Expo",
-      shortDesc: "Gourmet food tasting and wine pairing event",
-      price: "$89",
-      date: "September 12, 2024",
-      location: "Grand Hotel, Chicago",
-      image: "🍷",
-      category: "Food"
-    },
-    {
-      id: 4,
-      title: "Marathon Championship",
-      shortDesc: "International marathon race with prizes",
-      price: "$45",
-      date: "October 1, 2024",
-      location: "Downtown, Boston",
-      image: "🏃",
-      category: "Sports"
-    },
-    {
-      id: 5,
-      title: "Art Gallery Exhibition",
-      shortDesc: "Contemporary art showcase by emerging artists",
-      price: "$25",
-      date: "November 10-20, 2024",
-      location: "Modern Art Museum, LA",
-      image: "🎨",
-      category: "Art"
-    },
-    {
-      id: 6,
-      title: "Comedy Night Special",
-      shortDesc: "Stand-up comedy show with top comedians",
-      price: "$55",
-      date: "December 5, 2024",
-      location: "Comedy Club, Austin",
-      image: "😂",
-      category: "Entertainment"
-    }
-  ];
-
   const stats = [
     { number: "500+", label: "Events Monthly" },
     { number: "100K+", label: "Happy Customers" },
@@ -110,7 +88,7 @@ export default function Hero() {
   ];
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-indigo-100 via-pink-50 to-purple-200">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-pink-50 to-purple-200">
       {/* Hero Section */}
       <section className="pt-24 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -123,18 +101,24 @@ export default function Hero() {
                 Book tickets for concerts, conferences, sports events, and more. Your next unforgettable experience is just a click away.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <button className="px-8 py-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all hover:shadow-xl font-semibold text-center flex items-center justify-center space-x-2">
+                <button 
+                  onClick={goToEvents}
+                  className="px-8 py-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all hover:shadow-xl font-semibold text-center flex items-center justify-center space-x-2"
+                >
                   <span>Explore Events</span>
                   <ArrowRight className="w-5 h-5" />
                 </button>
-                <button className="px-8 py-4 border-2 border-indigo-600 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-all font-semibold text-center">
+                <button 
+                  onClick={() => scrollToSection('about')}
+                  className="px-8 py-4 border-2 border-indigo-600 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-all font-semibold text-center"
+                >
                   Learn More
                 </button>
               </div>
             </div>
             <div className="hidden md:block">
               <div className="relative">
-                <div className="absolute inset-0 bg-linear-to-r from-indigo-400 to-purple-400 rounded-2xl transform rotate-3"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-400 to-purple-400 rounded-2xl transform rotate-3"></div>
                 <div className="relative bg-white rounded-2xl shadow-2xl p-8">
                   <div className="space-y-4">
                     <div className="flex items-center space-x-4 p-4 bg-indigo-50 rounded-lg">
@@ -177,7 +161,7 @@ export default function Hero() {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
-              <div key={index} className="group p-6 bg-gray-50 rounded-xl hover:bg-indigo-50 transition-all hover:shadow-lg cursor-pointer">
+              <div key={index} className="group p-6 bg-white rounded-xl hover:bg-indigo-50 transition-all hover:shadow-lg cursor-pointer">
                 <div className="w-16 h-16 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-all">
                   {feature.icon}
                 </div>
@@ -190,51 +174,87 @@ export default function Hero() {
       </section>
 
       {/* Popular Events Section */}
-      <section className="py-20">
+      <section id="events-preview" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Popular Events</h2>
             <p className="text-xl text-gray-600">Browse and book tickets for upcoming events</p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {events.slice(0, 6).map((event) => (
-              <div key={event.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all transform hover:-translate-y-2">
-                <div className="h-48 bg-linear-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
-                  <span className="text-7xl">{event.image}</span>
-                </div>
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full text-xs font-medium">
-                      {event.category}
-                    </span>
-                    <span className="text-xl font-bold text-indigo-600">{event.price}</span>
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
-                  <p className="text-gray-600 mb-4 line-clamp-2">{event.shortDesc}</p>
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center space-x-2 text-sm text-gray-500">
-                      <Calendar className="w-4 h-4" />
-                      <span>{event.date}</span>
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+              <p className="mt-4 text-gray-600">Loading events...</p>
+            </div>
+          ) : events.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600 text-lg">No events available at the moment.</p>
+              <button 
+                onClick={() => router.push('/login')}
+                className="mt-4 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold"
+              >
+                Login to Create Events
+              </button>
+            </div>
+          ) : (
+            <>
+                              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {events.slice(0, 6).map((event) => (
+                  <div key={event._id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all transform hover:-translate-y-2">
+                    <div className="h-48 bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center overflow-hidden">
+                      {event.image && event.image.startsWith('http') ? (
+                        <img 
+                          src={event.image} 
+                          alt={event.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-8xl" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji"' }}>
+                          {event.image || '🎫'}
+                        </span>
+                      )}
                     </div>
-                    <div className="flex items-center space-x-2 text-sm text-gray-500">
-                      <MapPin className="w-4 h-4" />
-                      <span>{event.location}</span>
+                    <div className="p-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full text-xs font-medium">
+                          {event.category}
+                        </span>
+                        <span className="text-xl font-bold text-indigo-600">{event.price}</span>
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
+                      <p className="text-gray-600 mb-4 line-clamp-2">{event.shortDesc}</p>
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center space-x-2 text-sm text-gray-500">
+                          <Calendar className="w-4 h-4" />
+                          <span>{event.date}</span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-sm text-gray-500">
+                          <MapPin className="w-4 h-4" />
+                          <span>{event.location}</span>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => viewEventDetails(event._id)}
+                        className="block w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-center"
+                      >
+                        View Details
+                      </button>
                     </div>
                   </div>
-                  <button className="block w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-center">
-                    View Details
-                  </button>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          <div className="text-center mt-12">
-            <button className="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold inline-block">
-              View All Events
-            </button>
-          </div>
+              <div className="text-center mt-12">
+                <button 
+                  onClick={goToEvents}
+                  className="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold inline-flex items-center space-x-2"
+                >
+                  <span>View All Events</span>
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </section>
 
@@ -253,7 +273,7 @@ export default function Hero() {
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="py-20">
+      <section id="contact" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12">
             <div>
@@ -285,7 +305,7 @@ export default function Hero() {
                 </div>
               </div>
             </div>
-            <div className="bg-gray-50 p-8 rounded-2xl">
+            <div className="bg-white p-8 rounded-2xl shadow-lg">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
