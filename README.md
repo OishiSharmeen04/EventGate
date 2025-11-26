@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎫 TicketHub
 
-## Getting Started
+A modern event ticketing platform built with Next.js 14, Express.js, and MongoDB. Users can browse events, create accounts, and manage their own events with a clean, responsive interface.
 
-First, run the development server:
+## 📋 Features
+
+- Browse and search events by category
+- User authentication (Email/Password & Google OAuth)
+- Create and manage events (protected routes)
+- Responsive design for all devices
+- Real-time data with MongoDB Atlas
+- JWT-based authentication
+
+## 🛠️ Tech Stack
+
+**Frontend:** Next.js 14 (App Router), NextAuth.js, Tailwind CSS  
+**Backend:** Express.js, MongoDB, Mongoose, JWT  
+**Database:** MongoDB Atlas (Cloud)
+
+---
+
+## 🚀 Setup & Installation
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Create Next.js app (from project root)
+npx create-next-app@latest event-ticket-hub
+cd event-ticket-hub
+
+# Install additional dependencies
+npm install next-auth lucide-react
+
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 4. Run Application
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Frontend:**
+```bash
+cd event-ticket-hub
+npm run dev
+```
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🗺️ Routes Summary
 
-## Learn More
+### Frontend Routes
 
-To learn more about Next.js, take a look at the following resources:
+**Public Routes:**
+- `/` - Landing page (Hero, Features, Events, Contact)
+- `/events` - Browse all events with search/filter
+- `/events/[id]` - Event details page
+- `/login` - User login
+- `/register` - User registration
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Protected Routes (Login Required):**
+- `/add` - Create new event
+- `/manage` - View and manage user's events
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Backend API Routes
 
-## Deploy on Vercel
+**Authentication:**
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `GET /api/auth/me` - Get current user (protected)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Events:**
+- `GET /api/events` - Get all events (public)
+- `GET /api/events/:id` - Get single event (public)
+- `POST /api/events` - Create event (protected)
+- `PUT /api/events/:id` - Update event (protected)
+- `DELETE /api/events/:id` - Delete event (protected)
+- `GET /api/events/user/my-events` - Get user's events (protected)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Live Demo
+
+https://event-gate-demo.vercel.app/
